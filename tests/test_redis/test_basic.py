@@ -3,6 +3,8 @@
 
 from common import *
 
+import random
+
 def test_setget():
     r = getconn()
 
@@ -37,6 +39,13 @@ def test_ping_quit():
     assert(r.get('k') == 'v')
 
     assert_fail('Socket closed|Connection closed', r.execute_command, 'QUIT')
+
+def test_echo():
+    r = getconn()
+
+    string = 'hey' + str(random.randint(0, 1000))
+
+    assert(r.echo(string) == 'OK')
 
 def test_slow_req():
     r = getconn()

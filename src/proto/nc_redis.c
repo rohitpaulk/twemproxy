@@ -34,6 +34,7 @@
 #undef DEFINE_ACTION
 
 static rstatus_t redis_handle_auth_req(struct msg *request, struct msg *response);
+static rstatus_t redis_handle_echo_req(struct msg *request, struct msg *response);
 
 /*
  * Return true, if the redis command take no key, otherwise
@@ -90,6 +91,7 @@ redis_arg0(struct msg *r)
     case MSG_REQ_REDIS_ZCARD:
     case MSG_REQ_REDIS_PFCOUNT:
     case MSG_REQ_REDIS_AUTH:
+    case MSG_REQ_REDIS_ECHO:
         return true;
 
     default:
@@ -662,6 +664,12 @@ redis_parse_req(struct msg *r)
 
                 if (str4icmp(m, 'p', 'i', 'n', 'g')) {
                     r->type = MSG_REQ_REDIS_PING;
+                    r->noforward = 1;
+                    break;
+                }
+
+                if (str4icmp(m, 'e', 'c', 'h', 'o')) {
+                    r->type = MSG_REQ_REDIS_ECHO;
                     r->noforward = 1;
                     break;
                 }
@@ -2698,6 +2706,9 @@ redis_reply(struct msg *r)
     case MSG_REQ_REDIS_PING:
         return msg_append(response, rsp_pong.data, rsp_pong.len);
 
+    case MSG_REQ_REDIS_ECHO:
+        return redis_handle_echo_req(r, response);
+
     default:
         NOT_REACHED();
         return NC_ERROR;
@@ -2836,6 +2847,12 @@ redis_handle_auth_req(struct msg *req, struct msg *rsp)
      */
     conn->authenticated = 0;
     return msg_append(rsp, rsp_invalid_password.data, rsp_invalid_password.len);
+}
+
+static rstatus_t
+redis_handle_echo_req(struct msg *req, struct msg *rsp)
+{
+    return msg_append(rsp, rsp_ok.data, rsp_ok.len);
 }
 
 rstatus_t
